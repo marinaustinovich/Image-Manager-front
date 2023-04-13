@@ -1,6 +1,3 @@
-
-deployment:
-
 ### Modern Image Manager
 
 #### Легенда
