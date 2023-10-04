@@ -1,0 +1,60 @@
+.gallery-field {
+  position: relative;
+  width: 100%;
+  min-height: 40vh;
+  border: 1px solid #212529;
+  border-radius: 18px;
+  padding: 2rem;
+  background-color: #e8dfdf;
+}
+
+.gallery-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 25px;
+  padding: 1rem 0;
+}
+
+.gallery-list > * {
+    height: 60%; 
+  }
+
+.overlapped {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  margin: 0;
+  opacity: 0;
+  width: 100%;
+}
+
+.overlap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  margin: 0;
+  width: 100%;
+  pointer-events: none;
+  font-size: 2.5rem;
+}
+
+@media (max-width: 768px) {
+  .gallery-field-wrapper {
+    flex-wrap: wrap;
+  }
+
+  .gallery-field {
+    min-height: 150px;
+  }
+  .gallery-field_form {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  .overlap {
+    font-size: 1.5rem;
+  }
+}

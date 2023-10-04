@@ -1,9 +1,5 @@
 import Gallery from './Modern-Image-Manager/Gallery';
 
-/* eslint-disable */
-console.log('it works!');
-
-const gallery = new Gallery();
+const url = 'http://localhost:3000/';
+const gallery = new Gallery(url);
 gallery.bindToDOM(document.querySelector('.gallery-container'));
-
-

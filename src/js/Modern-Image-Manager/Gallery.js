@@ -1,14 +1,16 @@
-import createImageBlock from './createImageBlock';
-import fetchDnDImage from './fetch/fetchDnDImage';
-import fetchImage from './fetch/fetchImage';
-import uploadImage from './fetch/uploadImage';
-import isValidUrl from './isValidUrl';
-import Picture from './Picture';
+import ImageBlock from './ImageBlock/ImageBlock';
+import getImageList from './fetch/getImageList';
+import addImage from './fetch/addImage';
+import deleteImage from './fetch/deleteImage';
+import './gallery.css';
 
 export default class Gallery {
-  constructor() {
+  constructor(url) {
     this.container = null;
+    this.images = [];
     this.list = null;
+    this.previewImage = null;
+    this.url = url;
   }
 
   bindToDOM(container) {
@@ -26,75 +28,87 @@ export default class Gallery {
     }
   }
 
-  drawUi() {
+  async drawUi() {
     this.checkBinding();
     this.container.innerHTML = `
-    <div class="gallery-field-wrapper">
-      <div class="gallery-field gallery-field_form">
-            <form id="image-form" name="imageForm" enctype="multipart/form-data">
-              <div class="title-wrapper">
-                <label class="title title_label" for="name-image">Название</label>
-                <input class="gallery-field__input" data-id="image" type="text" name="name" placeholder="Enter title of your picture" autocomplete="off" required>
-              </div>
-                
-              <div class="title-wrapper">
-                <label class="title title_label" for="file">Ссылка на изображение</label>
-                <input class="gallery-field__input" data-id="url" type="url" name="file" placeholder="//example.png|webp|gif|svg" autocomplete="off"  pattern="(https?://.*.(png|webp|jpg|gif|svg)$)" required>
-              </div>
-              <div class="error-url hidden">Неверный URL изображения</div>
-              <button class="btn-add" type="submit">Добавить</button>
-            </form>
-            
-          </div>
-          <div class="gallery-field">
-            <input data-id="file" class="overlapped" type="file" accept="image/*">
-            <span data-id="overlap" class="title overlap">Drag and Drop files here <br> or Click to select</span>
-          </div>
-    </div>
-    <div class="gallery-list"></div>
+      <div class="gallery-field">
+        <input data-id="file" class="overlapped" type="file" accept="image/*">
+        <div data-id="overlap" class="title overlap">Drag and Drop files here or Click to select</div>
+      </div>
+      <div class="gallery-list"></div>
+      <div class='error hidden'>It's no Picture!</div>
       `;
-    this.list = document.querySelector('.gallery-list');
+    this.list = this.container.querySelector('.gallery-list');
+    this.fileInput = this.container.querySelector('[data-id=file]');
+    this.galleryFieldEl = this.container.querySelector('.gallery-field');
+
     this.events();
+    await this.reloadData();
   }
 
   events() {
-    const fileEl = document.querySelector('[data-id=file]');
-    const overlapEl = document.querySelector('[data-id=overlap]');
-    const form = document.getElementById('image-form');
-
-    form.addEventListener('submit', (e) => this.onSubmit(e));
-    overlapEl.addEventListener('click', () => fileEl.dispatchEvent(new MouseEvent('click')));
-    fileEl.addEventListener('change', (e) => this.onChange(e));
+    this.galleryFieldEl.addEventListener('click', (e) => {
+      if (e.target !== this.fileInput) {
+        this.fileInput.dispatchEvent(new MouseEvent('click'));
+      }
+    });
+    this.fileInput.addEventListener('change', () => this.onChange());
   }
 
-  async onSubmit(e) {
-    const form = e.currentTarget;
-    e.preventDefault();
+  async reloadData() {
+    while (this.list.firstChild) {
+      this.list.removeChild(this.list.firstChild);
+    }
+    const response = await getImageList(`${this.url}files`);
 
-    const imageUrl = e.target.closest('form').querySelector('[data-id="url"]').value;
-    const nameImg = e.target.closest('form').querySelector('[data-id="image"]').value;
-
-    // Получение файла по URL-адресу
-    try {
-      const blob = await fetchImage(imageUrl);
-      const result = await uploadImage(blob, nameImg);
-
-      if (imageUrl !== '' && isValidUrl(imageUrl)) {
-        const image = new Picture(result.name, result.url, result.id);
-        createImageBlock(image, this.list);
-        form.reset();
-      }
-    } catch (error) {
-      /* eslint-disable */
-      console.error(error);
+    if (response && response.files) {
+      response.files.forEach((file) => {
+        this.addImage(file);
+      });
+    } else {
+      console.log('No files found');
     }
   }
 
-  async onChange(e) {
-    const data = e.target.files[0];
-    const formData = new FormData();
-    formData.append('file', data);
+  async onChange() {
+    const file = this.fileInput.files && this.fileInput.files[0];
 
-    await fetchDnDImage(formData, this.list);
+    if (!file) return;
+    if (file.type.startsWith('image/')) {
+      const formData = new FormData();
+
+      formData.append('file', file);
+      const response = await addImage(`${this.url}files`, formData);
+
+      if (response) {
+        this.reloadData();
+      }
+    } else {
+      console.log('no picture');
+    }
+    this.fileInput.value = null;
+  }
+
+  async onDeleteImage(id) {
+    const response = await deleteImage(`${this.url}files/${id}`);
+    console.log('galere', response);
+    if (response) {
+      this.reloadData();
+    }
+  }
+
+  addImage(data) {
+    const imageBlock = new ImageBlock(
+      data,
+      Gallery.showError.bind(this),
+      this.onDeleteImage.bind(this),
+    );
+    this.list.appendChild(imageBlock.element);
+  }
+
+  static showError() {
+    const container = document.querySelector('.gallery-container');
+    const errorEl = container.querySelector('.error');
+    errorEl.classList.remove('hidden');
   }
 }

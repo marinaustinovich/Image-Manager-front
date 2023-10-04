@@ -1,17 +1,20 @@
-const deleteImage = async (url) => {
+const addImage = async (url, formData) => {
   try {
     const response = await fetch(url, {
-      method: 'DELETE',
+      method: 'POST',
+      body: formData,
     });
+
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
-    return 'deleted successful';
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error:', error);
     throw error;
   }
 };
 
-export default deleteImage;
+export default addImage;
